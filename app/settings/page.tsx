@@ -22,7 +22,6 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
   User,
-  Palette,
   LogOut,
   Plus,
   Trash2,

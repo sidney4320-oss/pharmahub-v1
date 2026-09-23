@@ -25,7 +25,6 @@ import {
   BookOpen,
   CalendarClock,
   Library,
-  Clock,
   TrendingUp,
 } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
@@ -44,9 +43,8 @@ function DashboardContent() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [subs, subs2, ress, exs, nts] = await Promise.all([
+      const [subs, ress, exs, nts] = await Promise.all([
         queries.getSubjects(),
-        Promise.resolve([] as Topic[]),
         queries.getResources(),
         queries.getExams(),
         queries.getNotes(),

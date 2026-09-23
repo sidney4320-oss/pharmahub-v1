@@ -25,7 +25,7 @@ import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, MAX_FILE_SIZE, ACCEPTED_FILE_EXTE
 import { extractTextFromFile, formatFileSize } from '@/lib/text-extract';
 import type { Subject, Topic, ResourceType } from '@/types/database';
 import { toast } from 'sonner';
-import { Upload, File as FileIcon, X, Loader2, Image as ImageIcon, FileText } from 'lucide-react';
+import { Upload, X, Loader2, Image as ImageIcon, FileText } from 'lucide-react';
 
 interface UploadDialogProps {
   open: boolean;

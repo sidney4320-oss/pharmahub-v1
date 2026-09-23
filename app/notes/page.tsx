@@ -34,7 +34,6 @@ import {
   StickyNote,
   Trash2,
   Search as SearchIcon,
-  ChevronRight,
 } from 'lucide-react';
 
 function NotesContent() {

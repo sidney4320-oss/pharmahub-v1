@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ProtectedRoute } from '@/components/providers/protected-route';
@@ -620,7 +620,9 @@ export default function QuizzesPage() {
   return (
     <ProtectedRoute>
       <AppShell title="Quizzes" subtitle="Test your knowledge">
-        <QuizzesContent />
+        <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <QuizzesContent />
+        </Suspense>
       </AppShell>
     </ProtectedRoute>
   );

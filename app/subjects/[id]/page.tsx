@@ -43,7 +43,6 @@ import {
   FileText,
   Library,
   CalendarClock,
-  StickyNote,
   Upload,
   ChevronRight,
 } from 'lucide-react';
