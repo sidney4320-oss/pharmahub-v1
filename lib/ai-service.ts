@@ -54,46 +54,83 @@ export const aiService = {
 
   async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to summarize text
-    return null;
+    try {
+      const res = await fetch('/api/ai/generate-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 
   async generateFlashcards(
     text: string,
-    _count?: number,
+    count?: number,
   ): Promise<FlashcardResult[] | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to generate flashcards
-    return null;
+    try {
+      const res = await fetch('/api/ai/generate-flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, count: count || 10 }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.flashcards as FlashcardResult[];
+    } catch {
+      return null;
+    }
   },
 
   async generateQuiz(
     text: string,
-    _questionCount: number,
-    _difficulty: string,
-    _questionType: string,
+    questionCount: number,
+    difficulty: string,
+    questionType: string,
+    topic?: string,
   ): Promise<QuizQuestionResult[] | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to generate quiz questions
-    return null;
+    try {
+      const res = await fetch('/api/ai/generate-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.questions as QuizQuestionResult[];
+    } catch {
+      return null;
+    }
   },
 
   async explainConcept(
     concept: string,
-    _context?: string,
+    context?: string,
   ): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to explain concept
-    return null;
+    try {
+      const res = await fetch('/api/ai/explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept, context }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 
   async answerQuestion(
     question: string,
     _sources?: { title: string; text: string }[],
   ): Promise<ExplainResult | null> {
-    if (!this.isAvailable()) return null;
-    // Integration point: call AI provider with RAG context
-    return null;
+    return this.explainConcept(question);
   },
 
   async analyzeImage(
@@ -101,7 +138,7 @@ export const aiService = {
     _prompt?: string,
   ): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI vision provider
+    // Integration point: call AI vision provider (not yet implemented)
     return null;
   },
 };

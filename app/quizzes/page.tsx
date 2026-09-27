@@ -563,7 +563,7 @@ function QuizzesContent() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Difficulty</Label>
                   <Select value={genDifficulty} onValueChange={(v) => setGenDifficulty(v as Difficulty)}>
