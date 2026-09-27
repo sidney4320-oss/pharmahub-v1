@@ -111,19 +111,19 @@ function DashboardContent() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Greeting */}
       <div>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">
+        <h1 className="text-xl lg:text-2xl font-bold">
           {greeting}, {capitalizedName}
         </h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Here&apos;s what you should focus on today.
         </p>
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Link href="/library">
           <Card className="hover:shadow-md transition-shadow cursor-pointer border-primary/20 bg-primary/5">
             <CardContent className="flex flex-col items-center justify-center py-5 text-center">
@@ -170,9 +170,9 @@ function DashboardContent() {
         </Link>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Left column — main content */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Continue learning */}
           {topicsInProgress.length > 0 && (
             <Card>
@@ -308,7 +308,7 @@ function DashboardContent() {
         </div>
 
         {/* Right column — sidebar content */}
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-6">
           {/* Upcoming exams */}
           <Card>
             <CardHeader className="pb-3">

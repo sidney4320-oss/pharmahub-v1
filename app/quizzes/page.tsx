@@ -126,7 +126,6 @@ function QuizzesContent() {
         parseInt(genCount),
         genDifficulty,
         genQType,
-        topic?.name || subject?.name,
       );
 
       if (result && result.length > 0) {

@@ -1,4 +1,13 @@
-'use client';
+/**
+ * AI Service Abstraction Layer
+ *
+ * This module provides a clean interface for AI-powered features.
+ * The underlying provider can be swapped without touching the UI.
+ *
+ * Integration point: To enable AI, set the AI_PROVIDER env var and
+ * implement the provider-specific calls in the respective methods.
+ * Until then, methods return null so the UI can show "AI not configured".
+ */
 
 export interface AIConfig {
   enabled: boolean;
@@ -45,85 +54,46 @@ export const aiService = {
 
   async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {
     if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data as SummaryResult;
-    } catch {
-      return null;
-    }
+    // Integration point: call AI provider to summarize text
+    return null;
   },
 
   async generateFlashcards(
     text: string,
-    count?: number,
+    _count?: number,
   ): Promise<FlashcardResult[] | null> {
     if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-flashcards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, count: count || 10 }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.flashcards as FlashcardResult[];
-    } catch {
-      return null;
-    }
+    // Integration point: call AI provider to generate flashcards
+    return null;
   },
 
   async generateQuiz(
     text: string,
-    questionCount: number,
-    difficulty: string,
-    questionType: string,
-    topic?: string,
+    _questionCount: number,
+    _difficulty: string,
+    _questionType: string,
   ): Promise<QuizQuestionResult[] | null> {
     if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.questions as QuizQuestionResult[];
-    } catch {
-      return null;
-    }
+    // Integration point: call AI provider to generate quiz questions
+    return null;
   },
 
   async explainConcept(
     concept: string,
-    context?: string,
+    _context?: string,
   ): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/explain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ concept, context }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data as ExplainResult;
-    } catch {
-      return null;
-    }
+    // Integration point: call AI provider to explain concept
+    return null;
   },
 
   async answerQuestion(
     question: string,
     _sources?: { title: string; text: string }[],
   ): Promise<ExplainResult | null> {
-    return this.explainConcept(question);
+    if (!this.isAvailable()) return null;
+    // Integration point: call AI provider with RAG context
+    return null;
   },
 
   async analyzeImage(
@@ -131,6 +101,7 @@ export const aiService = {
     _prompt?: string,
   ): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
+    // Integration point: call AI vision provider
     return null;
   },
 };

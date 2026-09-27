@@ -93,7 +93,7 @@ function SettingsContent() {
   const iconOptions = ['BookOpen', 'Pill', 'Dna', 'HeartPulse', 'Bone', 'Brain', 'Calculator', 'Atom', 'FlaskConical', 'Computer', 'MessageSquare', 'Stethoscope'];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Account */}
       <Card>
         <CardHeader className="pb-3">
@@ -141,7 +141,7 @@ function SettingsContent() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="subjCode">Code</Label>
               <Input
@@ -232,9 +232,9 @@ function SettingsContent() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Badge className="bg-emerald-500/10 text-emerald-600 border-0">Configured</Badge>
+          <Badge variant="secondary">Not configured</Badge>
           <p className="text-xs text-muted-foreground mt-2">
-            Google Gemini AI is connected. Quiz generation, summaries, flashcards, and concept explanations are now active throughout the app.
+            AI features (summaries, flashcard generation, quiz generation, concept explanations) are built as clean service abstractions. Once an AI provider is connected, these features activate automatically throughout the app.
           </p>
         </CardContent>
       </Card>
