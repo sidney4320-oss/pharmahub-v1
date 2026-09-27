@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 200 8% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 8% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 8% 10%;
+    --primary: 173 80% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 12% 95%;
+    --secondary-foreground: 200 8% 15%;
+    --muted: 200 12% 95%;
+    --muted-foreground: 200 8% 45%;
+    --accent: 173 40% 94%;
+    --accent-foreground: 173 80% 25%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 200 12% 90%;
+    --input: 200 12% 90%;
+    --ring: 173 80% 30%;
+    --chart-1: 173 80% 30%;
+    --chart-2: 200 70% 45%;
+    --chart-3: 43 74% 55%;
+    --chart-4: 160 60% 40%;
+    --chart-5: 280 55% 55%;
+    --radius: 0.6rem;
+  }
+
+  .dark {
+    --background: 200 10% 6%;
+    --foreground: 200 8% 95%;
+    --card: 200 10% 9%;
+    --card-foreground: 200 8% 95%;
+    --popover: 200 10% 9%;
+    --popover-foreground: 200 8% 95%;
+    --primary: 173 70% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 10% 14%;
+    --secondary-foreground: 200 8% 90%;
+    --muted: 200 10% 14%;
+    --muted-foreground: 200 8% 55%;
+    --accent: 173 30% 16%;
+    --accent-foreground: 173 60% 70%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 200 10% 18%;
+    --input: 200 10% 18%;
+    --ring: 173 70% 40%;
+    --chart-1: 173 70% 40%;
+    --chart-2: 200 60% 55%;
+    --chart-3: 43 74% 55%;
+    --chart-4: 160 60% 45%;
+    --chart-5: 280 55% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
