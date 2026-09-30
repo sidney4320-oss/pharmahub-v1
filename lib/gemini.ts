@@ -160,5 +160,3 @@ export function parseJSON<T>(
   }
   return null;
 }
-
-export const maxDuration = 30;
