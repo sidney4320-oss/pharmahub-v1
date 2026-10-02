@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { callGemini, requireUser, checkRateLimit, parseJSON, maxDuration } from '@/lib/gemini';
+import { callGemini, requireUser, checkRateLimit, parseJSON } from '@/lib/gemini';
 
 const InputSchema = z.object({
   text: z.string().max(20000),
@@ -14,7 +14,7 @@ const CardSchema = z.object({
 
 const OutputSchema = z.array(CardSchema);
 
-export const maxDuration_export = maxDuration;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
