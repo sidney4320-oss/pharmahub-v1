@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { callGemini, requireUser, checkRateLimit, parseJSON, maxDuration } from '@/lib/gemini';
+import { callGemini, requireUser, checkRateLimit, parseJSON } from '@/lib/gemini';
+
+// Set max duration for this API route (60 seconds)
+export const maxDuration = 60;
 
 const InputSchema = z.object({
   concept: z.string().max(500),
@@ -16,8 +19,6 @@ const OutputSchema = z.object({
     })
   ),
 });
-
-export const maxDuration_export = maxDuration;
 
 export async function POST(req: NextRequest) {
   try {
