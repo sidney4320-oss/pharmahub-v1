@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { callGemini, requireUser, checkRateLimit, parseJSON, maxDuration } from '@/lib/gemini';
+import { callGemini, requireUser, checkRateLimit, parseJSON } from '@/lib/gemini';
 
 const DifficultyEnum = z.enum(['basic', 'intermediate', 'advanced']);
 const QuestionTypeEnum = z.enum(['mcq', 'true_false', 'short_answer', 'mixed']);
@@ -23,7 +23,7 @@ const QuestionSchema = z.object({
 
 const OutputSchema = z.array(QuestionSchema);
 
-export const maxDuration_export = maxDuration;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
