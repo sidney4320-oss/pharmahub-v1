@@ -21,6 +21,8 @@ const QuestionSchema = z.object({
   explanation: z.string().min(1),
 });
 
+type Question = z.infer<typeof QuestionSchema>;
+
 const OutputSchema = z.array(QuestionSchema);
 
 export const maxDuration = 60;
@@ -89,7 +91,7 @@ Make sure questions are clinically relevant and accurate for pharmacy education.
       responseMimeType: 'application/json',
     });
 
-    let questions = parseJSON<typeof QuestionSchema[]>(rawText, OutputSchema);
+    let questions = parseJSON<Question[]>(rawText, OutputSchema);
 
     if (!questions) {
       console.error('Failed to parse Gemini response:', rawText);
@@ -100,7 +102,7 @@ Make sure questions are clinically relevant and accurate for pharmacy education.
     }
 
     // Validate and filter questions
-    questions = questions.filter((q) => {
+    questions = questions.filter((q: Question) => {
       if (!q.question || !q.type || !q.correctAnswer || !q.explanation) {
         return false;
       }
