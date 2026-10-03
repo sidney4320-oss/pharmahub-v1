@@ -12,6 +12,8 @@ const CardSchema = z.object({
   back: z.string().min(1),
 });
 
+type Card = z.infer<typeof CardSchema>;
+
 const OutputSchema = z.array(CardSchema);
 
 export const maxDuration = 60;
@@ -69,7 +71,7 @@ ${truncatedText}
       responseMimeType: 'application/json',
     });
 
-    let cards = parseJSON<typeof CardSchema[]>(rawText, OutputSchema);
+    let cards = parseJSON<Card[]>(rawText, OutputSchema);
 
     if (!cards) {
       console.error('Failed to parse Gemini response:', rawText);
@@ -81,7 +83,7 @@ ${truncatedText}
 
     // Filter out invalid cards
     cards = cards.filter(
-      (c): c is z.infer<typeof CardSchema> =>
+      (c): c is Card =>
         typeof c.front === 'string' &&
         c.front.trim().length > 0 &&
         typeof c.back === 'string' &&
