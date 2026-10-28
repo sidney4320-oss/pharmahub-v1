@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase/client';
+
 /**
  * AI Service Abstraction Layer
  *
@@ -38,10 +40,24 @@ export interface ExplainResult {
 }
 
 function getAIConfig(): AIConfig {
-  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER;
+  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER?.toLowerCase();
+  const hasPublicGeminiKey = Boolean(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
+  const enabled = Boolean(provider && provider !== 'none') || hasPublicGeminiKey;
+
   return {
-    enabled: Boolean(provider && provider !== 'none'),
-    provider: provider || undefined,
+    enabled,
+    provider: provider || (hasPublicGeminiKey ? 'gemini' : undefined),
+  };
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return {
+    'Content-Type': 'application/json',
+    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
   };
 }
 
@@ -57,7 +73,7 @@ export const aiService = {
     try {
       const res = await fetch('/api/ai/generate-summary', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ text }),
       });
       if (!res.ok) return null;
@@ -75,7 +91,7 @@ export const aiService = {
     try {
       const res = await fetch('/api/ai/generate-flashcards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ text, count: count || 10 }),
       });
       if (!res.ok) return null;
@@ -97,7 +113,7 @@ export const aiService = {
     try {
       const res = await fetch('/api/ai/generate-quiz', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }),
       });
       if (!res.ok) return null;
@@ -116,7 +132,7 @@ export const aiService = {
     try {
       const res = await fetch('/api/ai/explain', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ concept, context }),
       });
       if (!res.ok) return null;
