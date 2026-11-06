@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PharmaHub">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <path d="M218 102h76v116h116v76H294v116h-76V294H102v-76h116z" fill="#fff"/>
+  <circle cx="365" cy="147" r="34" fill="#a7f3d0"/>
+</svg>
