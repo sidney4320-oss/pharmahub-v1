@@ -9,79 +9,79 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { SUBJECT_COLORS } from '@/lib/constants';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import {
-  User,
-  LogOut,
-  Plus,
-  Trash2,
-  Sparkles,
-} from 'lucide-react';
+import { User, LogOut, Plus, Trash2, Sparkles, ShieldCheck } from 'lucide-react';
 
 function SettingsContent() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-
-  // Add subject
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newColor, setNewColor] = useState(SUBJECT_COLORS[0].value);
   const [newIcon, setNewIcon] = useState('BookOpen');
   const [adding, setAdding] = useState(false);
-
   const [subjects, setSubjects] = useState<Array<{ id: string; name: string; code: string | null }>>([]);
 
-  // Load subjects
   useEffect(() => {
     if (!user) return;
+    let active = true;
     supabase.from('subjects').select('id, name, code').eq('user_id', user.id).order('name')
-      .then(({ data }) => setSubjects(data ?? []));
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) toast.error('Could not load subjects');
+        setSubjects(data ?? []);
+      })
+      .catch(() => { if (active) toast.error('Could not load subjects'); });
+    return () => { active = false; };
   }, [user]);
 
   const handleAddSubject = async () => {
     if (!newName.trim() || !user) return;
     setAdding(true);
-    const { error } = await supabase.from('subjects').insert({
-      user_id: user.id,
-      name: newName.trim(),
-      code: newCode.trim() || null,
-      description: newDesc.trim() || null,
-      color: newColor,
-      icon: newIcon,
-      semester: 1,
-    });
-    setAdding(false);
-    if (error) {
-      toast.error('Could not add subject');
-    } else {
+    try {
+      const { error } = await supabase.from('subjects').insert({
+        user_id: user.id,
+        name: newName.trim(),
+        code: newCode.trim() || null,
+        description: newDesc.trim() || null,
+        color: newColor,
+        icon: newIcon,
+        semester: 1,
+      });
+      if (error) {
+        toast.error('Could not add subject');
+        return;
+      }
       toast.success('Subject added');
       setNewName('');
       setNewCode('');
       setNewDesc('');
-      // Reload
-      const { data } = await supabase.from('subjects').select('id, name, code').eq('user_id', user.id).order('name');
+      const { data, error: loadError } = await supabase.from('subjects').select('id, name, code').eq('user_id', user.id).order('name');
+      if (loadError) toast.error('Subject added, but the list could not be refreshed');
       setSubjects(data ?? []);
+    } catch {
+      toast.error('Could not add subject');
+    } finally {
+      setAdding(false);
     }
   };
 
   const handleDeleteSubject = async (id: string) => {
-    const { error } = await supabase.from('subjects').delete().eq('id', id);
-    if (error) {
+    try {
+      const { error } = await supabase.from('subjects').delete().eq('id', id);
+      if (error) {
+        toast.error('Could not delete subject');
+      } else {
+        setSubjects((previous) => previous.filter((subject) => subject.id !== id));
+        toast.success('Subject deleted');
+      }
+    } catch {
       toast.error('Could not delete subject');
-    } else {
-      setSubjects((prev) => prev.filter((s) => s.id !== id));
-      toast.success('Subject deleted');
     }
   };
 
@@ -91,167 +91,59 @@ function SettingsContent() {
   };
 
   const iconOptions = ['BookOpen', 'Pill', 'Dna', 'HeartPulse', 'Bone', 'Brain', 'Calculator', 'Atom', 'FlaskConical', 'Computer', 'MessageSquare', 'Stethoscope'];
+  const aiProvider = process.env.NEXT_PUBLIC_AI_PROVIDER?.trim().toLowerCase();
+  const aiProviderSelected = Boolean(aiProvider && aiProvider !== 'none');
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Account */}
+    <div className="mx-auto max-w-2xl space-y-6">
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="w-4 h-4 text-primary" />
-            Account
-          </CardTitle>
-        </CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><User className="h-4 w-4 text-primary" />Account</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div>
-            <Label className="text-xs text-muted-foreground">Email</Label>
-            <p className="text-sm font-medium mt-0.5">{user?.email}</p>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Role</Label>
-            <p className="text-sm font-medium mt-0.5">Pharmacy Student</p>
-          </div>
-          <Button variant="destructive" size="sm" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          <div><Label className="text-xs text-muted-foreground">Email</Label><p className="mt-0.5 text-sm font-medium">{user?.email}</p></div>
+          <div><Label className="text-xs text-muted-foreground">Role</Label><p className="mt-0.5 text-sm font-medium">Pharmacy Student</p></div>
+          <Button variant="destructive" size="sm" onClick={handleSignOut}><LogOut className="mr-2 h-4 w-4" />Sign Out</Button>
         </CardContent>
       </Card>
 
-      {/* Add subject */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Plus className="w-4 h-4 text-primary" />
-            Add Subject
-          </CardTitle>
-        </CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Plus className="h-4 w-4 text-primary" />Add Subject</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Your 9 Semester 1 pharmacy subjects were added automatically. Add more subjects here.
-          </p>
-
-          <div className="space-y-2">
-            <Label htmlFor="subjName">Subject name</Label>
-            <Input
-              id="subjName"
-              placeholder="e.g. Organic Chemistry"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
+          <p className="text-xs text-muted-foreground">Your 9 Semester 1 pharmacy subjects were added automatically. Add more subjects here.</p>
+          <div className="space-y-2"><Label htmlFor="subjName">Subject name</Label><Input id="subjName" placeholder="e.g. Organic Chemistry" value={newName} onChange={(event) => setNewName(event.target.value)} /></div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="subjCode">Code</Label><Input id="subjCode" placeholder="e.g. OCHM 201" value={newCode} onChange={(event) => setNewCode(event.target.value)} /></div>
+            <div className="space-y-2"><Label>Icon</Label><Select value={newIcon} onValueChange={setNewIcon}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{iconOptions.map((icon) => <SelectItem key={icon} value={icon}>{icon}</SelectItem>)}</SelectContent></Select></div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="subjCode">Code</Label>
-              <Input
-                id="subjCode"
-                placeholder="e.g. OCHM 201"
-                value={newCode}
-                onChange={(e) => setNewCode(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Icon</Label>
-              <Select value={newIcon} onValueChange={setNewIcon}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {iconOptions.map((ic) => (
-                    <SelectItem key={ic} value={ic}>{ic}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECT_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setNewColor(c.value)}
-                  className={`w-8 h-8 rounded-lg transition-all ${
-                    newColor === c.value ? 'ring-2 ring-offset-2 ring-foreground' : ''
-                  }`}
-                  style={{ backgroundColor: c.value }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="subjDesc">Description (optional)</Label>
-            <Input
-              id="subjDesc"
-              placeholder="Brief description..."
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-            />
-          </div>
-
-          <Button onClick={handleAddSubject} disabled={adding || !newName.trim()}>
-            {adding ? 'Adding...' : 'Add Subject'}
-          </Button>
+          <div className="space-y-2"><Label>Color</Label><div className="flex flex-wrap gap-2">{SUBJECT_COLORS.map((color) => <button key={color.value} type="button" aria-label={`Select color ${color.value}`} aria-pressed={newColor === color.value} onClick={() => setNewColor(color.value)} className={`h-8 w-8 rounded-lg transition-all ${newColor === color.value ? 'ring-2 ring-offset-2 ring-foreground' : ''}`} style={{ backgroundColor: color.value }} />)}</div></div>
+          <div className="space-y-2"><Label htmlFor="subjDesc">Description (optional)</Label><Input id="subjDesc" placeholder="Brief description..." value={newDesc} onChange={(event) => setNewDesc(event.target.value)} /></div>
+          <Button onClick={handleAddSubject} disabled={adding || !newName.trim()}>{adding ? 'Adding...' : 'Add Subject'}</Button>
         </CardContent>
       </Card>
 
-      {/* Manage subjects */}
-      {subjects.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Your Subjects</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {subjects.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-secondary/50">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{s.name}</p>
-                  {s.code && <p className="text-xs text-muted-foreground">{s.code}</p>}
-                </div>
-                <button
-                  onClick={() => handleDeleteSubject(s.id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {subjects.length > 0 && <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Your Subjects</CardTitle></CardHeader>
+        <CardContent className="space-y-2">{subjects.map((subject) => <div key={subject.id} className="flex items-center justify-between gap-3 rounded-lg bg-secondary/50 p-2.5"><div className="min-w-0"><p className="truncate text-sm font-medium">{subject.name}</p>{subject.code && <p className="text-xs text-muted-foreground">{subject.code}</p>}</div><button type="button" aria-label={`Delete ${subject.name}`} onClick={() => handleDeleteSubject(subject.id)} className="p-1 text-muted-foreground transition-colors hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>)}</CardContent>
+      </Card>}
 
-      {/* AI info */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            AI Features
-          </CardTitle>
-        </CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" />AI Features</CardTitle></CardHeader>
         <CardContent>
-          <Badge variant="secondary">Not configured</Badge>
-          <p className="text-xs text-muted-foreground mt-2">
-            AI features (summaries, flashcard generation, quiz generation, concept explanations) are built as clean service abstractions. Once an AI provider is connected, these features activate automatically throughout the app.
-          </p>
+          <Badge variant="secondary">{aiProviderSelected ? `Provider selected: ${aiProvider}` : 'Not configured'}</Badge>
+          <p className="mt-2 text-xs text-muted-foreground">Summaries, flashcards, quizzes, and concept explanations require a supported NEXT_PUBLIC_AI_PROVIDER and a server-side GOOGLE_AI_API_KEY. Keep provider API keys on the server; do not expose them as NEXT_PUBLIC variables. If configuration is missing, AI requests return a friendly error and other app features remain available.</p>
         </CardContent>
       </Card>
 
-      <p className="text-center text-xs text-muted-foreground py-4">
-        PharmaHub — Everything you need to learn pharmacy, in one place.
-      </p>
+      <Card className="border-primary/20 bg-primary/[0.03]">
+        <CardContent className="flex items-start gap-3 p-5">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div><Badge className="mb-2 bg-primary/10 text-primary hover:bg-primary/15">Proprietary Software of Sidney</Badge><p className="text-sm font-medium">PharmaHub</p><p className="mt-1 text-xs text-muted-foreground">© {new Date().getFullYear()} Sidney. All rights reserved.</p></div>
+        </CardContent>
+      </Card>
+      <p className="py-2 text-center text-xs text-muted-foreground">PharmaHub — Everything you need to learn pharmacy, in one place.</p>
     </div>
   );
 }
 
 export default function SettingsPage() {
-  return (
-    <ProtectedRoute>
-      <AppShell title="Settings" subtitle="Manage your account and subjects">
-        <SettingsContent />
-      </AppShell>
-    </ProtectedRoute>
-  );
+  return <ProtectedRoute><AppShell title="Settings" subtitle="Manage your account and subjects"><SettingsContent /></AppShell></ProtectedRoute>;
 }

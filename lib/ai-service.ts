@@ -1,16 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
 
-/**
- * AI Service Abstraction Layer
- *
- * This module provides a clean interface for AI-powered features.
- * The underlying provider can be swapped without touching the UI.
- *
- * Integration point: To enable AI, set the AI_PROVIDER env var and
- * implement the provider-specific calls in the respective methods.
- * Until then, methods return null so the UI can show "AI not configured".
- */
-
 export interface AIConfig {
   enabled: boolean;
   provider?: string;
@@ -40,25 +29,22 @@ export interface ExplainResult {
 }
 
 function getAIConfig(): AIConfig {
-  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER?.toLowerCase();
-  const hasPublicGeminiKey = Boolean(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
-  const enabled = Boolean(provider && provider !== 'none') || hasPublicGeminiKey;
-
-  return {
-    enabled,
-    provider: provider || (hasPublicGeminiKey ? 'gemini' : undefined),
-  };
+  const configuredProvider = process.env.NEXT_PUBLIC_AI_PROVIDER?.trim().toLowerCase();
+  const supportedProviders = ['gemini'];
+  const provider = configuredProvider && supportedProviders.includes(configuredProvider) ? configuredProvider : undefined;
+  return { enabled: Boolean(provider), provider };
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  return {
-    'Content-Type': 'application/json',
-    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-  };
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      'Content-Type': 'application/json',
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    };
+  } catch {
+    return { 'Content-Type': 'application/json' };
+  }
 }
 
 export const aiService = {
@@ -71,90 +57,47 @@ export const aiService = {
   async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {
     if (!this.isAvailable()) return null;
     try {
-      const res = await fetch('/api/ai/generate-summary', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+      const response = await fetch('/api/ai/generate-summary', { method: 'POST', headers: await getAuthHeaders(), body: JSON.stringify({ text }) });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch { return null; }
   },
 
-  async generateFlashcards(
-    text: string,
-    count?: number,
-  ): Promise<FlashcardResult[] | null> {
+  async generateFlashcards(text: string, count?: number): Promise<FlashcardResult[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const res = await fetch('/api/ai/generate-flashcards', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text, count: count || 10 }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
+      const response = await fetch('/api/ai/generate-flashcards', { method: 'POST', headers: await getAuthHeaders(), body: JSON.stringify({ text, count: count || 10 }) });
+      if (!response.ok) return null;
+      const data = await response.json();
       return data.flashcards as FlashcardResult[];
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   },
 
-  async generateQuiz(
-    text: string,
-    questionCount: number,
-    difficulty: string,
-    questionType: string,
-    topic?: string,
-  ): Promise<QuizQuestionResult[] | null> {
+  async generateQuiz(text: string, questionCount: number, difficulty: string, questionType: string, topic?: string): Promise<QuizQuestionResult[] | null> {
     if (!this.isAvailable()) return null;
     try {
-      const res = await fetch('/api/ai/generate-quiz', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
+      const response = await fetch('/api/ai/generate-quiz', { method: 'POST', headers: await getAuthHeaders(), body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }) });
+      if (!response.ok) return null;
+      const data = await response.json();
       return data.questions as QuizQuestionResult[];
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   },
 
-  async explainConcept(
-    concept: string,
-    context?: string,
-  ): Promise<ExplainResult | null> {
+  async explainConcept(concept: string, context?: string): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
     try {
-      const res = await fetch('/api/ai/explain', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ concept, context }),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+      const response = await fetch('/api/ai/explain', { method: 'POST', headers: await getAuthHeaders(), body: JSON.stringify({ concept, context }) });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch { return null; }
   },
 
-  async answerQuestion(
-    question: string,
-    _sources?: { title: string; text: string }[],
-  ): Promise<ExplainResult | null> {
+  async answerQuestion(question: string, _sources?: { title: string; text: string }[]): Promise<ExplainResult | null> {
     return this.explainConcept(question);
   },
 
-  async analyzeImage(
-    _imageBase64: string,
-    _prompt?: string,
-  ): Promise<ExplainResult | null> {
+  async analyzeImage(_imageBase64: string, _prompt?: string): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI vision provider (not yet implemented)
     return null;
   },
 };

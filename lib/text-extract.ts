@@ -1,59 +1,46 @@
-/**
- * Text extraction utilities.
- *
- * In a browser environment, PDF text extraction requires a library like pdf.js.
- * For images, OCR requires tesseract.js or a server-side OCR service.
- *
- * This module provides the abstraction. When the libraries are installed,
- * the extraction logic can be added here without changing the UI.
- */
+/** Browser-safe text extraction helpers for uploaded resources. */
 
 export interface ExtractionResult {
   text: string;
   status: 'extracted' | 'failed' | 'not_applicable';
 }
 
-export async function extractTextFromFile(file: File): Promise<ExtractionResult> {
-  const type = file.type;
+export async function extractTextFromFile(file: File | null | undefined): Promise<ExtractionResult> {
+  if (!file || typeof file !== 'object' || typeof file.type !== 'string' || typeof file.text !== 'function') {
+    return { text: '', status: 'failed' };
+  }
 
-  if (type === 'text/plain') {
+  const type = file.type.toLowerCase();
+  if (type === 'text/plain' || getFileExtension(file.name || '') === 'txt') {
     try {
       const text = await file.text();
-      return { text, status: 'extracted' };
+      return text.trim() ? { text, status: 'extracted' } : { text: '', status: 'failed' };
     } catch {
       return { text: '', status: 'failed' };
     }
   }
-
-  if (type === 'application/pdf') {
-    // Integration point: use pdf.js to extract text from PDF
-    // For now, we mark as pending — text extraction can be done server-side
+  if (type === 'application/pdf' || getFileExtension(file.name || '') === 'pdf' || type.startsWith('image/')) {
     return { text: '', status: 'not_applicable' };
   }
-
-  if (type.startsWith('image/')) {
-    // Integration point: use tesseract.js for OCR
-    return { text: '', status: 'not_applicable' };
-  }
-
   return { text: '', status: 'not_applicable' };
 }
 
 export function getFileExtension(filename: string): string {
-  const parts = filename.split('.');
+  const safeName = typeof filename === 'string' ? filename : '';
+  const parts = safeName.split('.');
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
 }
 
 export function isImageFile(mimeType: string): boolean {
-  return mimeType.startsWith('image/');
+  return typeof mimeType === 'string' && mimeType.toLowerCase().startsWith('image/');
 }
 
 export function isPdfFile(mimeType: string): boolean {
-  return mimeType === 'application/pdf';
+  return typeof mimeType === 'string' && mimeType.toLowerCase() === 'application/pdf';
 }
 
 export function formatFileSize(bytes: number | null | undefined): string {
-  if (!bytes) return '—';
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes <= 0) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
