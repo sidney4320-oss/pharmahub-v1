@@ -13,13 +13,16 @@ import { toast } from 'sonner';
 export default function SignupPage() {
   const { signUp } = useAuth();
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const trimmedName = name.trim();
+
+    if (!trimmedName || !email || !password) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -27,9 +30,11 @@ export default function SignupPage() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(trimmedName, email, password);
     setLoading(false);
+
     if (error) {
       toast.error(
         error === 'User already registered'
@@ -37,14 +42,13 @@ export default function SignupPage() {
           : error,
       );
     } else {
-      toast.success('Account created! Your pharmacy subjects are ready.');
+      toast.success(`Welcome, ${trimmedName}! Your pharmacy subjects are ready.`);
       router.push('/dashboard');
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      {/* Left panel — form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 order-2 lg:order-1">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-3 mb-8">
@@ -64,6 +68,20 @@ export default function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="John"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                maxLength={80}
+                autoComplete="name"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -75,6 +93,7 @@ export default function SignupPage() {
                 autoComplete="email"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -87,14 +106,12 @@ export default function SignupPage() {
                 autoComplete="new-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+
+            <Button type="submit" className="w-full" disabled={loading || !name.trim()}>
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  Create Account
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
+                <>Create Account<ArrowRight className="w-4 h-4 ml-2" /></>
               )}
             </Button>
           </form>
@@ -108,7 +125,6 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Right panel — branding */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-primary p-12 text-primary-foreground order-1 lg:order-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-primary-foreground/15">
@@ -126,10 +142,8 @@ export default function SignupPage() {
           </h2>
           <p className="text-primary-foreground/80 mb-8">
             Upload your PDFs, lecture slides, handwritten note photos, and past papers.
-            PharmaHub organizes everything by subject and topic so you always know where
-            your materials are.
+            PharmaHub organizes everything by subject and topic so you always know where your materials are.
           </p>
-
           <div className="space-y-4">
             {[
               { icon: BookOpen, text: '9 pharmacy subjects pre-loaded for Semester 1' },
@@ -146,9 +160,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <p className="text-xs text-primary-foreground/60">
-          Your personal pharmacy study companion.
-        </p>
+        <p className="text-xs text-primary-foreground/60">Your personal pharmacy study companion.</p>
       </div>
     </div>
   );

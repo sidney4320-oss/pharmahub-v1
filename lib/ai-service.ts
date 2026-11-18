@@ -1,16 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
 
-/**
- * AI Service Abstraction Layer
- *
- * This module provides a clean interface for AI-powered features.
- * The underlying provider can be swapped without touching the UI.
- *
- * Integration point: To enable AI, set the AI_PROVIDER env var and
- * implement the provider-specific calls in the respective methods.
- * Until then, methods return null so the UI can show "AI not configured".
- */
-
 export interface AIConfig {
   enabled: boolean;
   provider?: string;
@@ -39,21 +28,8 @@ export interface ExplainResult {
   sources: { title: string; snippet: string }[];
 }
 
-function getAIConfig(): AIConfig {
-  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER?.toLowerCase();
-  const hasPublicGeminiKey = Boolean(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
-  const enabled = Boolean(provider && provider !== 'none') || hasPublicGeminiKey;
-
-  return {
-    enabled,
-    provider: provider || (hasPublicGeminiKey ? 'gemini' : undefined),
-  };
-}
-
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   return {
     'Content-Type': 'application/json',
@@ -61,45 +37,41 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   };
 }
 
+async function requestJSON<T>(url: string, body: unknown): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      console.error('AI request failed:', payload?.error || res.statusText);
+      return null;
+    }
+
+    return await res.json() as T;
+  } catch (error) {
+    console.error('AI request error:', error);
+    return null;
+  }
+}
+
 export const aiService = {
-  config: getAIConfig(),
+  config: { enabled: true, provider: 'gemini' } as AIConfig,
 
   isAvailable(): boolean {
-    return this.config.enabled;
+    return true;
   },
 
   async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {
-    if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-summary', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+    return requestJSON<SummaryResult>('/api/ai/generate-summary', { text });
   },
 
-  async generateFlashcards(
-    text: string,
-    count?: number,
-  ): Promise<FlashcardResult[] | null> {
-    if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-flashcards', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text, count: count || 10 }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.flashcards as FlashcardResult[];
-    } catch {
-      return null;
-    }
+  async generateFlashcards(text: string, count = 10): Promise<FlashcardResult[] | null> {
+    const data = await requestJSON<{ flashcards: FlashcardResult[] }>('/api/ai/generate-flashcards', { text, count });
+    return data?.flashcards ?? null;
   },
 
   async generateQuiz(
@@ -109,52 +81,25 @@ export const aiService = {
     questionType: string,
     topic?: string,
   ): Promise<QuizQuestionResult[] | null> {
-    if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/generate-quiz', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ text, questionCount, difficulty, questionType, topic }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.questions as QuizQuestionResult[];
-    } catch {
-      return null;
-    }
+    const data = await requestJSON<{ questions: QuizQuestionResult[] }>('/api/ai/generate-quiz', {
+      text,
+      questionCount,
+      difficulty,
+      questionType,
+      topic,
+    });
+    return data?.questions ?? null;
   },
 
-  async explainConcept(
-    concept: string,
-    context?: string,
-  ): Promise<ExplainResult | null> {
-    if (!this.isAvailable()) return null;
-    try {
-      const res = await fetch('/api/ai/explain', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ concept, context }),
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+  async explainConcept(concept: string, context?: string): Promise<ExplainResult | null> {
+    return requestJSON<ExplainResult>('/api/ai/explain', { concept, context });
   },
 
-  async answerQuestion(
-    question: string,
-    _sources?: { title: string; text: string }[],
-  ): Promise<ExplainResult | null> {
-    return this.explainConcept(question);
+  async answerQuestion(question: string, sources?: { title: string; text: string }[]): Promise<ExplainResult | null> {
+    return this.explainConcept(question, sources?.map((source) => source.text).join('\n'));
   },
 
-  async analyzeImage(
-    _imageBase64: string,
-    _prompt?: string,
-  ): Promise<ExplainResult | null> {
-    if (!this.isAvailable()) return null;
-    // Integration point: call AI vision provider (not yet implemented)
+  async analyzeImage(_imageBase64: string, _prompt?: string): Promise<ExplainResult | null> {
     return null;
   },
 };
