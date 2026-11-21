@@ -30,15 +30,21 @@ export interface ExplainResult {
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Please sign in again before using AI features.');
+  }
 
   return {
     'Content-Type': 'application/json',
-    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    Authorization: `Bearer ${session.access_token}`,
   };
 }
 
+let lastError: string | null = null;
+
 async function requestJSON<T>(url: string, body: unknown): Promise<T | null> {
   try {
+    lastError = null;
     const res = await fetch(url, {
       method: 'POST',
       headers: await getAuthHeaders(),
@@ -47,12 +53,22 @@ async function requestJSON<T>(url: string, body: unknown): Promise<T | null> {
 
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
-      console.error('AI request failed:', payload?.error || res.statusText);
+      if (res.status === 401) {
+        lastError = 'Your session has expired. Please sign in again.';
+      } else if (res.status === 429) {
+        lastError = 'AI usage limit reached. Please wait a minute and try again.';
+      } else if (res.status >= 500) {
+        lastError = payload?.error || 'The AI service is temporarily unavailable.';
+      } else {
+        lastError = payload?.error || 'The AI request could not be completed.';
+      }
+      console.error('AI request failed:', lastError);
       return null;
     }
 
     return await res.json() as T;
   } catch (error) {
+    lastError = error instanceof Error ? error.message : 'Could not connect to the AI service.';
     console.error('AI request error:', error);
     return null;
   }
@@ -63,6 +79,10 @@ export const aiService = {
 
   isAvailable(): boolean {
     return true;
+  },
+
+  getLastError(): string | null {
+    return lastError;
   },
 
   async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+export const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // Simple in-memory rate limiter (per-instance, best effort)
@@ -100,7 +100,13 @@ export async function callGemini(options: GeminiCallOptions): Promise<string> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API returned ${response.status}`);
+      if (response.status === 429) {
+        throw new Error('Gemini rate limit reached. Please wait before retrying.');
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Gemini API authentication failed. Check GOOGLE_AI_API_KEY.');
+      }
+      throw new Error(`Gemini API returned ${response.status}. ${errorText.slice(0, 300)}`);
     }
 
     const data = await response.json();

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (!(await checkRateLimit(userId))) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Max 10 requests per minute.' },
-        { status: 429 }
+        { status: 429, headers: { 'Retry-After': '60' } }
       );
     }
 

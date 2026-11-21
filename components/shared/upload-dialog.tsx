@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, MAX_FILE_SIZE, ACCEPTED_FILE_EXTENSIONS } from '@/lib/constants';
+import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, MAX_FILE_SIZE, ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_TYPES } from '@/lib/constants';
 import { extractTextFromFile, formatFileSize } from '@/lib/text-extract';
 import type { Subject, Topic, ResourceType } from '@/types/database';
 import { toast } from 'sonner';
@@ -56,6 +57,8 @@ export function UploadDialog({
   const [resourceType, setResourceType] = useState<ResourceType>('lecture_notes');
   const [tags, setTags] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState('');
   const [dragOver, setDragOver] = useState(false);
 
   const availableTopics = topics.filter((t) => t.subject_id === subjectId);
@@ -72,13 +75,17 @@ export function UploadDialog({
 
   const handleFileSelect = useCallback((selectedFile: File | null) => {
     if (!selectedFile) return;
+    if (selectedFile.size === 0) {
+      toast.error('This file is empty. Please select a file with content.');
+      return;
+    }
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast.error(`File is too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}.`);
       return;
     }
     const ext = selectedFile.name.split('.').pop()?.toLowerCase();
-    const validExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'doc', 'docx'];
-    if (ext && !validExtensions.includes(ext)) {
+    const validExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'md', 'csv', 'json', 'doc', 'docx'];
+    if (!ext || !validExtensions.includes(ext) || (selectedFile.type && !ACCEPTED_FILE_TYPES.includes(selectedFile.type))) {
       toast.error(`File type ".${ext}" is not supported.`);
       return;
     }
@@ -108,19 +115,30 @@ export function UploadDialog({
     }
 
     setUploading(true);
+    setUploadProgress(10);
+    setUploadPhase('Uploading file...');
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'file';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('resources')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          contentType: file.type || undefined,
+          upsert: false,
+        });
 
       if (uploadError) {
-        toast.error('Could not upload file. Please try again.');
+        toast.error(uploadError.message || 'Could not upload file. Check your connection and storage permissions.');
         setUploading(false);
+        setUploadProgress(0);
+        setUploadPhase('');
         return;
       }
+
+      setUploadProgress(55);
+      setUploadPhase('Processing document...');
 
       // Extract text
       let extractedText: string | null = null;
@@ -137,6 +155,9 @@ export function UploadDialog({
         .split(',')
         .map((t) => t.trim())
         .filter(Boolean);
+
+      setUploadProgress(85);
+      setUploadPhase('Adding to library...');
 
       const { error: dbError } = await supabase.from('resources').insert({
         user_id: user.id,
@@ -156,17 +177,22 @@ export function UploadDialog({
       });
 
       if (dbError) {
-        toast.error('File uploaded but could not save to library. Please try again.');
+        await supabase.storage.from('resources').remove([fileName]);
+        toast.error(dbError.message || 'File uploaded but could not save to the library.');
       } else {
+        setUploadProgress(100);
         toast.success('Resource uploaded successfully');
         reset();
         onOpenChange(false);
         onUploaded?.();
       }
-    } catch {
-      toast.error('Something went wrong during upload.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Something went wrong during upload.');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadPhase('');
     }
-    setUploading(false);
   };
 
   return (
@@ -193,7 +219,7 @@ export function UploadDialog({
                 </div>
                 <p className="text-sm font-medium">Click to upload or drag & drop</p>
                 <p className="text-xs text-muted-foreground">
-                  PDF, PNG, JPG, WEBP, TXT, DOC — max {formatFileSize(MAX_FILE_SIZE)}
+                  PDF, PNG, JPG, WEBP, TXT, MD, CSV, JSON, DOC/DOCX — max {formatFileSize(MAX_FILE_SIZE)}
                 </p>
               </div>
               <input
@@ -211,6 +237,12 @@ export function UploadDialog({
                   <ImageIcon className="w-5 h-5" />
                 ) : (
                   <FileText className="w-5 h-5" />
+                )}
+                {uploading && (
+                  <div className="space-y-2" aria-live="polite">
+                    <Progress value={uploadProgress} />
+                    <p className="text-xs text-muted-foreground">{uploadPhase}</p>
+                  </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">

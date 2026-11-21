@@ -162,7 +162,7 @@ function ResourceDetailContent() {
     if (result) {
       setAiResult(result.summary);
     } else {
-      toast.error('AI could not generate a summary. Please try again later.');
+      toast.error(aiService.getLastError() || 'AI could not generate a summary. Please try again later.');
     }
   };
 

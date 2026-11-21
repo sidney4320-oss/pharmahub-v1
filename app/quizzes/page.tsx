@@ -149,6 +149,8 @@ function QuizzesContent() {
           loadData();
           return;
         }
+      } else {
+        toast.error(aiService.getLastError() || 'Could not generate quiz questions');
       }
     }
 
