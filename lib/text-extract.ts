@@ -15,8 +15,16 @@ export interface ExtractionResult {
 
 export async function extractTextFromFile(file: File): Promise<ExtractionResult> {
   const type = file.type;
+  const extension = getFileExtension(file.name);
 
-  if (type === 'text/plain') {
+  if (
+    type === 'text/plain' ||
+    type === 'text/markdown' ||
+    type === 'text/csv' ||
+    type === 'application/csv' ||
+    type === 'application/json' ||
+    ['txt', 'md', 'csv', 'json'].includes(extension)
+  ) {
     try {
       const text = await file.text();
       return { text, status: 'extracted' };

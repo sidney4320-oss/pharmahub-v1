@@ -71,13 +71,17 @@ export const ACCEPTED_FILE_TYPES = [
   'image/jpg',
   'image/webp',
   'text/plain',
+  'text/markdown',
+  'text/csv',
+  'application/csv',
+  'application/json',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
 export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
-export const ACCEPTED_FILE_EXTENSIONS = '.pdf,.png,.jpg,.jpeg,.webp,.txt,.doc,.docx';
+export const ACCEPTED_FILE_EXTENSIONS = '.pdf,.png,.jpg,.jpeg,.webp,.txt,.md,.csv,.json,.doc,.docx';
 
 export const SEMESTER_1_SUBJECTS = [
   {
