@@ -8,7 +8,7 @@ import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PharmaHub — Everything you need to learn pharmacy, in one place.',
+  title: 'PharmaHub',
   description:
     'PharmaHub organizes your pharmacy lecture notes, PDFs, images, and study materials into one connected learning environment.',
   manifest: '/manifest.json',

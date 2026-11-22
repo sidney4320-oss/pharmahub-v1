@@ -240,7 +240,7 @@ function SettingsContent() {
       </Card>
 
       <p className="text-center text-xs text-muted-foreground py-4">
-        PharmaHub — Everything you need to learn pharmacy, in one place.
+        PharmaHub
       </p>
     </div>
   );

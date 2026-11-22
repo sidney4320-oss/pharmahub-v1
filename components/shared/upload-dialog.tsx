@@ -85,7 +85,8 @@ export function UploadDialog({
     }
     const ext = selectedFile.name.split('.').pop()?.toLowerCase();
     const validExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'md', 'csv', 'json', 'doc', 'docx'];
-    if (!ext || !validExtensions.includes(ext) || (selectedFile.type && !ACCEPTED_FILE_TYPES.includes(selectedFile.type))) {
+    const validMime = !selectedFile.type || ACCEPTED_FILE_TYPES.includes(selectedFile.type);
+    if (!ext || !validExtensions.includes(ext) || !validMime) {
       toast.error(`File type ".${ext}" is not supported.`);
       return;
     }
@@ -209,6 +210,14 @@ export function UploadDialog({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
               }`}
@@ -231,30 +240,35 @@ export function UploadDialog({
               />
             </div>
           ) : (
-            <div className="border rounded-lg p-4 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-muted-foreground">
-                {file.type.startsWith('image/') ? (
-                  <ImageIcon className="w-5 h-5" />
-                ) : (
-                  <FileText className="w-5 h-5" />
-                )}
-                {uploading && (
-                  <div className="space-y-2" aria-live="polite">
-                    <Progress value={uploadProgress} />
-                    <p className="text-xs text-muted-foreground">{uploadPhase}</p>
-                  </div>
-                )}
+            <div className="space-y-2" aria-busy={uploading}>
+              <div className="border rounded-lg p-4 flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-muted-foreground">
+                  {file.type.startsWith('image/') ? (
+                    <ImageIcon className="w-5 h-5" />
+                  ) : (
+                    <FileText className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                </div>
+                <button
+                  onClick={() => setFile(null)}
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground p-1"
+                  aria-label={`Remove ${file.name}`}
+                  disabled={uploading}
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-              </div>
-              <button
-                onClick={() => setFile(null)}
-                className="text-muted-foreground hover:text-foreground p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {uploading && (
+                <div className="space-y-2" aria-live="polite">
+                  <Progress value={uploadProgress} aria-label={`${uploadPhase} ${uploadProgress}%`} />
+                  <p className="text-xs text-muted-foreground">{uploadPhase}</p>
+                </div>
+              )}
             </div>
           )}
 

@@ -16,7 +16,7 @@ import { ProgressBadge } from '@/components/shared/progress-badge';
 import { RESOURCE_TYPE_LABELS } from '@/lib/constants';
 import { formatFileSize } from '@/lib/text-extract';
 import type { Subject, Topic, Resource, Exam, Note } from '@/types/database';
-import { Upload, CalendarPlus, StickyNote, HelpCircle, ArrowRight, BookOpen, CalendarClock, Library, TrendingUp } from 'lucide-react';
+import { Upload, CalendarPlus, StickyNote, HelpCircle, ArrowRight, BookOpen, CalendarClock, Library, TrendingUp, Sparkles, Plus, Mic, Send } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 function DashboardContent() {
@@ -28,6 +28,7 @@ function DashboardContent() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [quizzesCompleted, setQuizzesCompleted] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,11 +36,12 @@ function DashboardContent() {
 
     let cancelled = false;
     (async () => {
-      const [subs, ress, exs, nts] = await Promise.all([
+      const [subs, ress, exs, nts, quizzes] = await Promise.all([
         queries.getSubjects(),
         queries.getResources(),
         queries.getExams(),
         queries.getNotes(),
+        queries.getQuizzes(),
       ]);
 
       if (cancelled) return;
@@ -47,6 +49,7 @@ function DashboardContent() {
       setResources(ress);
       setExams(exs);
       setNotes(nts);
+      setQuizzesCompleted(quizzes.filter((quiz) => quiz.completed_at).length);
 
       if (subs.length > 0) {
         const allTopics = await Promise.all(subs.map((subject) => queries.getTopics(subject.id)));
@@ -129,25 +132,67 @@ function DashboardContent() {
         <p className="text-sm text-muted-foreground mt-1">Here&apos;s what you should focus on today.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-3">
-        <Link href="/library">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-primary/20 bg-primary/5">
-            <CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary mb-2"><Upload className="w-5 h-5" /></div>
-              <span className="text-sm font-semibold">Upload Material</span>
-              <span className="text-[11px] text-muted-foreground mt-0.5">PDF, image, or text</span>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { href: '/study', title: 'Study & Explain', description: 'Review concepts and get clear explanations', icon: BookOpen },
+          { href: '/quizzes', title: 'Practice & Quiz', description: 'Test your knowledge with focused quizzes', icon: HelpCircle },
+          { href: '/library', title: 'Upload & Review Notes', description: 'Add PDFs, images, or text study materials', icon: Upload },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className="group">
+              <Card className="h-full border-border/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                <CardContent className="flex items-start gap-3 p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
+                  <div className="min-w-0"><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p></div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+
+      <Card className="overflow-hidden border-primary/15 bg-gradient-to-br from-card to-primary/[0.04]">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" />PharmaHub AI</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-xl border border-border bg-background p-3 shadow-sm">
+            <textarea
+              rows={3}
+              className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Ask about a concept, quiz topic, or upload a note..."
+              aria-label="Ask PharmaHub AI"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
+              <div className="flex items-center gap-1">
+                <Link href="/library" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary" aria-label="Upload document"><Plus className="h-4 w-4" /></Link>
+                <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary" aria-label="Voice action" disabled><Mic className="h-4 w-4" /></button>
+              </div>
+              <Link href="/study" className="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground"><Send className="h-3.5 w-3.5" />Open AI workspace</Link>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {['Explain pharmacokinetics', 'Create a quiz', 'Summarize my notes'].map((prompt) => (
+              <Link key={prompt} href="/study" className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/30 hover:text-foreground">{prompt}</Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Study summary">
+        {[
+          { label: 'Topics covered', value: topics.filter((topic) => topic.status === 'understood' || topic.status === 'mastered').length, icon: BookOpen },
+          { label: 'Quizzes completed', value: quizzesCompleted, icon: HelpCircle },
+          { label: 'Uploaded documents', value: resources.length, icon: Library },
+        ].map((metric) => (
+          <Card key={metric.label}>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary"><metric.icon className="h-4 w-4" /></div>
+              <div><p className="text-xl font-bold tabular-nums">{metric.value}</p><p className="text-xs text-muted-foreground">{metric.label}</p></div>
             </CardContent>
           </Card>
-        </Link>
-        <Link href="/study">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><BookOpen className="w-5 h-5" /></div><span className="text-sm font-semibold">Start Studying</span><span className="text-[11px] text-muted-foreground mt-0.5">Focus mode</span></CardContent></Card>
-        </Link>
-        <Link href="/exams">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><CalendarPlus className="w-5 h-5" /></div><span className="text-sm font-semibold">Add Exam</span><span className="text-[11px] text-muted-foreground mt-0.5">Plan ahead</span></CardContent></Card>
-        </Link>
-        <Link href="/quizzes">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><HelpCircle className="w-5 h-5" /></div><span className="text-sm font-semibold">Start Quiz</span><span className="text-[11px] text-muted-foreground mt-0.5">Test yourself</span></CardContent></Card>
-        </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -208,6 +253,29 @@ function DashboardContent() {
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />Study feed</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {resources.length === 0 && upcomingExams.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Your latest uploads and exam updates will appear here.</p>
+              ) : (
+                <>
+                  {recentResources.slice(0, 2).map((resource) => (
+                    <Link key={resource.id} href={`/resources/${resource.id}`} className="block rounded-lg border border-border p-3 hover:bg-secondary">
+                      <p className="truncate text-sm font-medium">{resource.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Resource uploaded</p>
+                    </Link>
+                  ))}
+                  {upcomingExams.slice(0, 1).map((exam) => (
+                    <Link key={exam.id} href="/exams" className="block rounded-lg border border-border p-3 hover:bg-secondary">
+                      <p className="truncate text-sm font-medium">{exam.exam_name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Upcoming exam</p>
+                    </Link>
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="pb-3"><div className="flex items-center justify-between gap-3"><CardTitle className="text-base flex items-center gap-2"><CalendarClock className="w-4 h-4 text-primary" />Upcoming</CardTitle><Link href="/exams" className="text-xs text-primary hover:underline shrink-0">All exams</Link></div></CardHeader>
             <CardContent>

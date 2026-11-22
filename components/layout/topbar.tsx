@@ -51,6 +51,10 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
 
         <div className="flex items-center gap-2">
           {actions}
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+            Study ready
+          </span>
 
           <Link
             href="/search"
@@ -64,7 +68,7 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors">
+              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors" aria-label={`Open account menu for ${displayName}`}>
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                     {initials}
