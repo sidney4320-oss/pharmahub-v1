@@ -38,11 +38,25 @@ export interface ExplainResult {
 }
 
 function getAIConfig(): AIConfig {
-  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER;
+  const provider = process.env.NEXT_PUBLIC_AI_PROVIDER || 'gemini-2.5-flash';
   return {
     enabled: Boolean(provider && provider !== 'none'),
     provider: provider || undefined,
   };
+}
+
+async function aiRequest(action: string, payload: Record<string, unknown>, accessToken?: string) {
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ action, payload }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'AI request failed.');
+  return data;
 }
 
 export const aiService = {
@@ -52,10 +66,10 @@ export const aiService = {
     return this.config.enabled;
   },
 
-  async generateSummary(text: string, _context?: string): Promise<SummaryResult | null> {
+  async generateSummary(text: string, context?: string, accessToken?: string): Promise<SummaryResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to summarize text
-    return null;
+    const data = await aiRequest('summary', { text, context }, accessToken);
+    return data as SummaryResult;
   },
 
   async generateFlashcards(
@@ -69,13 +83,14 @@ export const aiService = {
 
   async generateQuiz(
     text: string,
-    _questionCount: number,
-    _difficulty: string,
-    _questionType: string,
+    questionCount: number,
+    difficulty: string,
+    questionType: string,
+    accessToken?: string,
   ): Promise<QuizQuestionResult[] | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider to generate quiz questions
-    return null;
+    const data = await aiRequest('quiz', { text, questionCount, difficulty, questionType }, accessToken);
+    return data.questions as QuizQuestionResult[];
   },
 
   async explainConcept(
@@ -89,11 +104,14 @@ export const aiService = {
 
   async answerQuestion(
     question: string,
-    _sources?: { title: string; text: string }[],
+    sourcesOrToken?: { title: string; text: string }[] | string,
+    accessToken?: string,
   ): Promise<ExplainResult | null> {
     if (!this.isAvailable()) return null;
-    // Integration point: call AI provider with RAG context
-    return null;
+    const sources = Array.isArray(sourcesOrToken) ? sourcesOrToken : undefined;
+    const token = typeof sourcesOrToken === 'string' ? sourcesOrToken : accessToken;
+    const data = await aiRequest('answer', { question, sources }, token);
+    return data as ExplainResult;
   },
 
   async analyzeImage(

@@ -51,7 +51,7 @@ interface ResourceFull extends Resource {
 function ResourceDetailContent() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const resourceId = params.id as string;
 
   const [resource, setResource] = useState<ResourceFull | null>(null);
@@ -157,7 +157,7 @@ function ResourceDetailContent() {
       return;
     }
     setAiLoading(true);
-    const result = await aiService.generateSummary(resource.extracted_text, resource.title);
+    const result = await aiService.generateSummary(resource.extracted_text, resource.title, session?.access_token);
     setAiLoading(false);
     if (result) {
       setAiResult(result.summary);

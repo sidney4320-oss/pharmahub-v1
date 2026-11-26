@@ -9,6 +9,19 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('resources', 'resources', false)
 ON CONFLICT (id) DO NOTHING;
 
+UPDATE storage.buckets
+SET file_size_limit = 26214400,
+    allowed_mime_types = ARRAY[
+      'application/pdf',
+      'text/plain',
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]::text[]
+WHERE id = 'resources';
+
 -- Policies: users manage files under their own user-id folder
 DROP POLICY IF EXISTS "users upload own resources" ON storage.objects;
 CREATE POLICY "users upload own resources"

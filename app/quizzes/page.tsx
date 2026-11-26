@@ -43,7 +43,7 @@ type Difficulty = 'basic' | 'intermediate' | 'advanced';
 type QType = 'mcq' | 'true_false' | 'short_answer' | 'mixed';
 
 function QuizzesContent() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const searchParams = useSearchParams();
   const initialTopic = searchParams.get('topic') || '';
 
@@ -126,6 +126,7 @@ function QuizzesContent() {
         parseInt(genCount),
         genDifficulty,
         genQType,
+        session?.access_token,
       );
 
       if (result && result.length > 0) {

@@ -13,9 +13,10 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { SubjectIcon } from '@/components/shared/subject-icon';
 import { ResourceIcon } from '@/components/shared/resource-icon';
 import { ProgressBadge } from '@/components/shared/progress-badge';
+import { Textarea } from '@/components/ui/textarea';
 import { RESOURCE_TYPE_LABELS } from '@/lib/constants';
 import { formatFileSize } from '@/lib/text-extract';
-import type { Subject, Topic, Resource, Exam, Note } from '@/types/database';
+import type { Subject, Topic, Resource, Exam, Note, Quiz } from '@/types/database';
 import {
   Upload,
   CalendarPlus,
@@ -26,11 +27,16 @@ import {
   CalendarClock,
   Library,
   TrendingUp,
+  Sparkles,
+  Send,
+  Mic,
+  Loader2,
 } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
+import { aiService } from '@/lib/ai-service';
 
 function DashboardContent() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const queries = useQueries();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -38,21 +44,27 @@ function DashboardContent() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiAnswer, setAiAnswer] = useState('');
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [subs, ress, exs, nts] = await Promise.all([
+      const [subs, ress, exs, nts, qzs] = await Promise.all([
         queries.getSubjects(),
         queries.getResources(),
         queries.getExams(),
         queries.getNotes(),
+        queries.getQuizzes(),
       ]);
       setSubjects(subs);
       setResources(ress);
       setExams(exs);
       setNotes(nts);
+      setQuizzes(qzs);
 
       // Fetch topics for all subjects
       const allTopics = await Promise.all(subs.map((s) => queries.getTopics(s.id)));
@@ -70,8 +82,21 @@ function DashboardContent() {
     return 'Good evening';
   }, []);
 
-  const firstName = user?.email?.split('@')[0]?.split('.')[0] || 'there';
-  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  const displayName =
+    (user?.user_metadata?.full_name as string) ||
+    (user?.user_metadata?.name as string) ||
+    user?.email?.split('@')[0]?.split('.')[0] ||
+    'Student';
+  const capitalizedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
+  const handleAIQuestion = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    setAiAnswer('');
+    const result = await aiService.answerQuestion(aiPrompt.trim(), session?.access_token);
+    setAiLoading(false);
+    if (result) setAiAnswer(result.explanation);
+  };
 
   const upcomingExams = useMemo(() => {
     const now = new Date();
@@ -115,56 +140,51 @@ function DashboardContent() {
       {/* Greeting */}
       <div>
         <h1 className="text-xl lg:text-2xl font-bold">
-          {greeting}, {capitalizedName}
+          Welcome, {capitalizedName}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Here&apos;s what you should focus on today.
+          {greeting}. Here&apos;s what you should focus on today.
         </p>
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <Link href="/library">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer border-primary/20 bg-primary/5">
-            <CardContent className="flex flex-col items-center justify-center py-5 text-center">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary mb-2">
-                <Upload className="w-5 h-5" />
+          <Card className="h-full hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer border-primary/20 bg-primary/5">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-sm font-semibold">Study &amp; Explain</span>
+                  <p className="text-xs text-muted-foreground mt-1">Turn concepts into clear explanations</p>
+                </div>
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary"><BookOpen className="w-5 h-5" /></div>
               </div>
-              <span className="text-sm font-semibold">Upload Material</span>
-              <span className="text-xs text-muted-foreground mt-0.5">PDF, image, or text</span>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/study">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="flex flex-col items-center justify-center py-5 text-center">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <span className="text-sm font-semibold">Start Studying</span>
-              <span className="text-xs text-muted-foreground mt-0.5">Focus mode</span>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/exams">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="flex flex-col items-center justify-center py-5 text-center">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2">
-                <CalendarPlus className="w-5 h-5" />
-              </div>
-              <span className="text-sm font-semibold">Add Exam</span>
-              <span className="text-xs text-muted-foreground mt-0.5">Plan ahead</span>
             </CardContent>
           </Card>
         </Link>
         <Link href="/quizzes">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="flex flex-col items-center justify-center py-5 text-center">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2">
-                <HelpCircle className="w-5 h-5" />
+          <Card className="h-full hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-sm font-semibold">Practice &amp; Quiz</span>
+                  <p className="text-xs text-muted-foreground mt-1">Test recall and identify weak areas</p>
+                </div>
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground"><HelpCircle className="w-5 h-5" /></div>
               </div>
-              <span className="text-sm font-semibold">Start Quiz</span>
-              <span className="text-xs text-muted-foreground mt-0.5">Test yourself</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/library">
+          <Card className="h-full hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-sm font-semibold">Upload &amp; Review Notes</span>
+                  <p className="text-xs text-muted-foreground mt-1">Add notes, PDFs, and study images</p>
+                </div>
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground"><Upload className="w-5 h-5" /></div>
+              </div>
             </CardContent>
           </Card>
         </Link>
@@ -173,6 +193,61 @@ function DashboardContent() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left column — main content */}
         <div className="lg:col-span-2 space-y-6">
+          <Card className="border-primary/20 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><Sparkles className="h-4 w-4" /></span>
+                PharmaHub AI
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Ask for an explanation, summary, or study prompt..."
+                rows={3}
+                className="resize-none"
+                aria-label="Ask PharmaHub AI"
+              />
+              {aiAnswer && (
+                <div className="rounded-lg border bg-secondary/40 p-3 text-sm" role="status" aria-live="polite">
+                  {aiAnswer}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex gap-2">
+                  {['Explain this topic', 'Create a quiz', 'Summarize my notes'].map((prompt) => (
+                    <button key={prompt} type="button" onClick={() => setAiPrompt(prompt)} className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground">
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-secondary" aria-label="Voice input">
+                    <Mic className="h-4 w-4" />
+                  </button>
+                  <Button size="sm" onClick={handleAIQuestion} disabled={aiLoading || !aiPrompt.trim()} aria-busy={aiLoading}>
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="mr-2 h-4 w-4" />Ask AI</>}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { label: 'Topics covered', value: topics.filter((t) => t.status === 'understood' || t.status === 'mastered').length },
+              { label: 'Quizzes completed', value: quizzes.filter((quiz) => quiz.completed_at).length },
+              { label: 'Uploaded documents', value: resources.length },
+            ].map((metric) => (
+              <Card key={metric.label}>
+                <CardContent className="p-4">
+                  <p className="text-2xl font-bold tabular-nums">{metric.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{metric.label}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           {/* Continue learning */}
           {topicsInProgress.length > 0 && (
             <Card>

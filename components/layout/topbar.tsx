@@ -25,9 +25,8 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : 'PH';
+  const name = (user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Student') as string;
+  const initials = name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
@@ -54,7 +53,7 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors">
+              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors" aria-label={`Open account menu for ${name}`}>
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                     {initials}
@@ -64,6 +63,7 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5">
+                <p className="text-sm font-medium truncate">{name}</p>
                 <p className="text-sm font-medium truncate">{user?.email}</p>
                 <p className="text-xs text-muted-foreground">Pharmacy Student</p>
               </div>

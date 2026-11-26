@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, MAX_FILE_SIZE, ACCEPTED_FILE_EXTENSIONS } from '@/lib/constants';
+import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, MAX_FILE_SIZE, ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_TYPES } from '@/lib/constants';
 import { extractTextFromFile, formatFileSize } from '@/lib/text-extract';
 import type { Subject, Topic, ResourceType } from '@/types/database';
 import { toast } from 'sonner';
@@ -56,6 +56,7 @@ export function UploadDialog({
   const [resourceType, setResourceType] = useState<ResourceType>('lecture_notes');
   const [tags, setTags] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [dragOver, setDragOver] = useState(false);
 
   const availableTopics = topics.filter((t) => t.subject_id === subjectId);
@@ -72,14 +73,22 @@ export function UploadDialog({
 
   const handleFileSelect = useCallback((selectedFile: File | null) => {
     if (!selectedFile) return;
+    if (selectedFile.size === 0) {
+      toast.error('The selected file is empty.');
+      return;
+    }
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast.error(`File is too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}.`);
       return;
     }
     const ext = selectedFile.name.split('.').pop()?.toLowerCase();
     const validExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'doc', 'docx'];
-    if (ext && !validExtensions.includes(ext)) {
+    if (!ext || !validExtensions.includes(ext)) {
       toast.error(`File type ".${ext}" is not supported.`);
+      return;
+    }
+    if (selectedFile.type && !ACCEPTED_FILE_TYPES.includes(selectedFile.type)) {
+      toast.error('This file format is not supported. Choose PDF, TXT, DOC, DOCX, PNG, JPG, or WEBP.');
       return;
     }
     setFile(selectedFile);
@@ -108,21 +117,32 @@ export function UploadDialog({
     }
 
     setUploading(true);
+    setUploadStatus('Uploading file...');
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'file';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('resources')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'application/octet-stream',
+        });
 
       if (uploadError) {
-        toast.error('Could not upload file. Please try again.');
+        toast.error(
+          uploadError.message.toLowerCase().includes('bucket')
+            ? 'Storage is unavailable. Ask an administrator to verify the resources bucket.'
+            : `Upload failed: ${uploadError.message}`,
+        );
         setUploading(false);
+        setUploadStatus('');
         return;
       }
 
       // Extract text
+      setUploadStatus('Processing document...');
       let extractedText: string | null = null;
       let extractionStatus: 'pending' | 'extracted' | 'failed' | 'not_applicable' = 'pending';
       try {
@@ -156,17 +176,20 @@ export function UploadDialog({
       });
 
       if (dbError) {
-        toast.error('File uploaded but could not save to library. Please try again.');
+        await supabase.storage.from('resources').remove([fileName]);
+        toast.error(`File could not be added to the library: ${dbError.message}`);
       } else {
         toast.success('Resource uploaded successfully');
         reset();
         onOpenChange(false);
         onUploaded?.();
       }
-    } catch {
-      toast.error('Something went wrong during upload.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong during upload.';
+      toast.error(message);
     }
     setUploading(false);
+    setUploadStatus('');
   };
 
   return (
@@ -310,9 +333,15 @@ export function UploadDialog({
             </>
           )}
         </div>
+        {uploadStatus && (
+          <div className="flex items-center gap-2 rounded-lg bg-secondary/60 px-3 py-2 text-sm" role="status" aria-live="polite">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {uploadStatus}
+          </div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleUpload} disabled={uploading || !file || !subjectId}>
+          <Button onClick={handleUpload} disabled={uploading || !file || !subjectId} aria-busy={uploading}>
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

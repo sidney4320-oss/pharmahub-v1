@@ -7,19 +7,22 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pill, ArrowRight, Loader2, BookOpen, Brain, CalendarClock } from 'lucide-react';
+import { Pill, ArrowRight, Loader2, BookOpen, Brain, CalendarClock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SignupPage() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!name || !email || !password) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -28,7 +31,7 @@ export default function SignupPage() {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(name, email, password);
     setLoading(false);
     if (error) {
       toast.error(
@@ -39,6 +42,15 @@ export default function SignupPage() {
     } else {
       toast.success('Account created! Your pharmacy subjects are ready.');
       router.push('/dashboard');
+    }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setGoogleLoading(false);
+      toast.error(error);
     }
   };
 
@@ -64,6 +76,10 @@ export default function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="name">Full name</Label>
+              <Input id="name" type="text" placeholder="Jordan Smith" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -77,17 +93,23 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="pr-11"
+                />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
@@ -96,6 +118,14 @@ export default function SignupPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
+            </Button>
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or continue with</span></div>
+            </div>
+            <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading} aria-busy={googleLoading}>
+              {googleLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Continue with Google
             </Button>
           </form>
 
