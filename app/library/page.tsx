@@ -117,6 +117,7 @@ function LibraryContent() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
+            aria-label="Search resources"
           />
         </div>
         <Select value={filterSubject} onValueChange={setFilterSubject}>
@@ -143,6 +144,15 @@ function LibraryContent() {
                 {RESOURCE_TYPE_LABELS[t]}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(value: 'date' | 'title') => setSortBy(value)}>
+          <SelectTrigger className="w-full sm:w-[150px]" aria-label="Sort resources">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date">Newest first</SelectItem>
+            <SelectItem value="title">Title A–Z</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -180,8 +190,8 @@ function LibraryContent() {
             const subject = subjects.find((s) => s.id === r.subject_id);
             const topic = allTopics.find((t) => t.id === r.topic_id);
             return (
-              <Link key={r.id} href={`/resources/${r.id}`}>
-                <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
+              <Link key={r.id} href={`/resources/${r.id}`} className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Card className="h-full transition-colors hover:border-primary/30 hover:bg-secondary/20">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-muted-foreground shrink-0">
@@ -200,6 +210,19 @@ function LibraryContent() {
                         {r.description}
                       </p>
                     )}
+
+                    <Badge
+                      variant={r.extraction_status === 'failed' ? 'destructive' : 'secondary'}
+                      className="mb-3 text-[10px]"
+                    >
+                      {r.extraction_status === 'extracted'
+                        ? 'Text processed'
+                        : r.extraction_status === 'failed'
+                          ? 'Processing failed'
+                          : r.extraction_status === 'not_applicable'
+                            ? 'Processing not needed'
+                            : 'Processing pending'}
+                    </Badge>
 
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">

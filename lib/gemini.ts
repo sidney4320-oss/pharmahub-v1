@@ -72,18 +72,21 @@ interface GeminiCallOptions {
 }
 
 export async function callGemini(options: GeminiCallOptions): Promise<string> {
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
-    throw new Error('GOOGLE_AI_API_KEY not configured');
+    throw new Error('Gemini credentials are not configured');
   }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
 
   try {
-    const response = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    const response = await fetch(GEMINI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: options.prompt }] }],
         generationConfig: {
@@ -98,9 +101,14 @@ export async function callGemini(options: GeminiCallOptions): Promise<string> {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API returned ${response.status}`);
+      await response.text();
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Gemini authentication failed');
+      }
+      if (response.status === 429) {
+        throw new Error('Gemini quota or rate limit reached');
+      }
+      throw new Error(`Gemini request failed with status ${response.status}`);
     }
 
     const data = await response.json();
@@ -118,7 +126,10 @@ export async function callGemini(options: GeminiCallOptions): Promise<string> {
       throw new Error('Response exceeded max tokens');
     }
 
-    const text = candidate.content?.parts?.[0]?.text || '';
+    const text = (candidate.content?.parts ?? [])
+      .map((part: { text?: string }) => part.text || '')
+      .join('')
+      .trim();
     if (!text) {
       throw new Error('No text content in Gemini response');
     }

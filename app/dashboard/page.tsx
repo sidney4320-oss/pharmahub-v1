@@ -16,12 +16,13 @@ import { ProgressBadge } from '@/components/shared/progress-badge';
 import { RESOURCE_TYPE_LABELS } from '@/lib/constants';
 import { formatFileSize } from '@/lib/text-extract';
 import type { Subject, Topic, Resource, Exam, Note } from '@/types/database';
-import { Upload, CalendarPlus, StickyNote, HelpCircle, ArrowRight, BookOpen, CalendarClock, Library, TrendingUp } from 'lucide-react';
+import { Upload, StickyNote, ArrowRight, BookOpen, CalendarClock, CalendarPlus, Library, TrendingUp, Sparkles } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 function DashboardContent() {
   const { user } = useAuth();
   const queries = useQueries();
+  const { getSubjects, getResources, getExams, getNotes, getTopics } = queries;
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -36,10 +37,10 @@ function DashboardContent() {
     let cancelled = false;
     (async () => {
       const [subs, ress, exs, nts] = await Promise.all([
-        queries.getSubjects(),
-        queries.getResources(),
-        queries.getExams(),
-        queries.getNotes(),
+        getSubjects(),
+        getResources(),
+        getExams(),
+        getNotes(),
       ]);
 
       if (cancelled) return;
@@ -49,7 +50,7 @@ function DashboardContent() {
       setNotes(nts);
 
       if (subs.length > 0) {
-        const allTopics = await Promise.all(subs.map((subject) => queries.getTopics(subject.id)));
+        const allTopics = await Promise.all(subs.map((subject) => getTopics(subject.id)));
         if (!cancelled) setTopics(allTopics.flat());
       } else {
         setTopics([]);
@@ -61,7 +62,7 @@ function DashboardContent() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, getSubjects, getResources, getExams, getNotes, getTopics]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -124,30 +125,34 @@ function DashboardContent() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold">{greeting}, {capitalizedName}</h1>
-        <p className="text-sm text-muted-foreground mt-1">Here&apos;s what you should focus on today.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-3">
-        <Link href="/library">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-primary/20 bg-primary/5">
-            <CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary mb-2"><Upload className="w-5 h-5" /></div>
-              <span className="text-sm font-semibold">Upload Material</span>
-              <span className="text-[11px] text-muted-foreground mt-0.5">PDF, image, or text</span>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/study">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><BookOpen className="w-5 h-5" /></div><span className="text-sm font-semibold">Start Studying</span><span className="text-[11px] text-muted-foreground mt-0.5">Focus mode</span></CardContent></Card>
-        </Link>
-        <Link href="/exams">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><CalendarPlus className="w-5 h-5" /></div><span className="text-sm font-semibold">Add Exam</span><span className="text-[11px] text-muted-foreground mt-0.5">Plan ahead</span></CardContent></Card>
-        </Link>
-        <Link href="/quizzes">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="flex flex-col items-center justify-center py-4 text-center sm:py-5"><div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-foreground mb-2"><HelpCircle className="w-5 h-5" /></div><span className="text-sm font-semibold">Start Quiz</span><span className="text-[11px] text-muted-foreground mt-0.5">Test yourself</span></CardContent></Card>
-        </Link>
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{greeting}, {capitalizedName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Pick up where you left off, or choose what to study next.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={topicsInProgress[0] ? `/study?topic=${topicsInProgress[0].id}` : '/study'}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+            {topicsInProgress[0] ? 'Continue studying' : 'Choose a topic'}
+          </Link>
+          <Link
+            href="/ai"
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+            Ask PharmaHub AI
+          </Link>
+          <Link
+            href="/library"
+            className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <Upload className="h-4 w-4" aria-hidden="true" />
+            Upload
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -237,11 +242,16 @@ function DashboardContent() {
               {subjectProgress.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No subjects yet.</p>
               ) : (
-                subjectProgress.slice(0, 6).map(({ subject, pct }) => (
+                subjectProgress.slice(0, 6).map(({ subject, total, pct }) => (
                   <Link key={subject.id} href={`/subjects/${subject.id}`} className="flex items-center gap-3 group">
                     <SubjectIcon icon={subject.icon} color={subject.color} size="sm" />
-                    <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{subject.name}</p><ProgressBadge value={pct} showLabel={false} className="mt-1" /></div>
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground shrink-0">{pct}%</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{subject.name}</p>
+                      {total > 0
+                        ? <ProgressBadge value={pct} showLabel={false} className="mt-1" />
+                        : <p className="mt-1 text-xs text-muted-foreground">No topics yet</p>}
+                    </div>
+                    {total > 0 && <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">{pct}%</span>}
                   </Link>
                 ))
               )}

@@ -8,13 +8,16 @@ import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PharmaHub — Everything you need to learn pharmacy, in one place.',
+  title: 'PharmaHub AI — Pharmacy learning, organized.',
   description:
     'PharmaHub organizes your pharmacy lecture notes, PDFs, images, and study materials into one connected learning environment.',
   manifest: '/manifest.json',
-  themeColor: '#0f766e',
+  themeColor: '#0f172a',
   icons: {
-    icon: '/icons/pharmahub.svg',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' },
+    ],
+    apple: '/icons/pharmahub-light.svg',
   },
   appleWebApp: {
     capable: true,

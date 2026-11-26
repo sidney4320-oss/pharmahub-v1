@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "PharmaHub",
+  "name": "PharmaHub AI",
   "short_name": "PharmaHub",
   "description": "Your pharmacy learning materials in one place.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f766e",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "icons": [
     {
       "src": "/icons/pharmahub.svg",

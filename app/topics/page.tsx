@@ -11,7 +11,8 @@ import { SubjectIcon } from '@/components/shared/subject-icon';
 import { EmptyState } from '@/components/shared/empty-state';
 import type { Subject, Topic } from '@/types/database';
 import { TOPIC_STATUS_LABELS, TOPIC_STATUS_COLORS } from '@/lib/constants';
-import { FileText, ChevronRight, BookOpen } from 'lucide-react';
+import { FileText, ChevronRight, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface TopicWithSubject extends Topic {
   subject: Subject;
@@ -21,6 +22,7 @@ function TopicsContent() {
   const { user } = useAuth();
   const [topics, setTopics] = useState<TopicWithSubject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -28,7 +30,8 @@ function TopicsContent() {
       const { data: subs } = await supabase
         .from('subjects')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('name');
 
       if (!subs || subs.length === 0) {
         setLoading(false);
@@ -62,8 +65,33 @@ function TopicsContent() {
     );
   }
 
+  const query = search.trim().toLowerCase();
+  const filteredTopics = topics.filter((topic) =>
+    !query ||
+    topic.name.toLowerCase().includes(query) ||
+    topic.subject.name.toLowerCase().includes(query),
+  );
+  const topicsBySubject = new Map<string, TopicWithSubject[]>();
+  filteredTopics.forEach((topic) => {
+    const group = topicsBySubject.get(topic.subject_id) ?? [];
+    group.push(topic);
+    topicsBySubject.set(topic.subject_id, group);
+  });
+
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-4xl mx-auto space-y-5">
+      {topics.length > 0 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search topics or subjects..."
+            aria-label="Search topics or subjects"
+            className="pl-9"
+          />
+        </div>
+      )}
       {topics.length === 0 ? (
         <EmptyState
           icon={<FileText className="w-7 h-7" />}
@@ -77,34 +105,49 @@ function TopicsContent() {
             </Link>
           }
         />
+      ) : filteredTopics.length === 0 ? (
+        <EmptyState
+          icon={<Search className="w-7 h-7" />}
+          title="No topics found"
+          description="Try a different topic or subject name."
+        />
       ) : (
-        <div className="space-y-2">
-          {topics.map((topic) => (
-            <Link key={topic.id} href={`/topics/${topic.id}`}>
-              <Card className="hover:shadow-sm transition-shadow">
-                <CardContent className="p-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <SubjectIcon icon={topic.subject.icon} color={topic.subject.color} size="sm" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{topic.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {topic.subject.name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full ${TOPIC_STATUS_COLORS[topic.status]}`} />
-                      <span className="text-xs text-muted-foreground hidden sm:inline">
-                        {TOPIC_STATUS_LABELS[topic.status]}
-                      </span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        <div className="space-y-6">
+          {Array.from(topicsBySubject.values())
+            .sort((a, b) => a[0].subject.name.localeCompare(b[0].subject.name))
+            .map((subjectTopics) => {
+            const subject = subjectTopics[0].subject;
+            return (
+              <section key={subject.id} aria-labelledby={`subject-${subject.id}`}>
+                <div className="mb-2 flex items-center gap-2">
+                  <SubjectIcon icon={subject.icon} color={subject.color} size="sm" />
+                  <h2 id={`subject-${subject.id}`} className="text-sm font-semibold">{subject.name}</h2>
+                  <span className="text-xs text-muted-foreground">{subjectTopics.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {subjectTopics.map((topic) => (
+                    <Link key={topic.id} href={`/topics/${topic.id}`} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <Card className="transition-colors hover:border-primary/30 hover:bg-secondary/30">
+                        <CardContent className="flex items-center justify-between gap-3 p-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{topic.name}</p>
+                            {topic.description && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{topic.description}</p>}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${TOPIC_STATUS_COLORS[topic.status]}`} />
+                            <span className="hidden text-xs text-muted-foreground sm:inline">
+                              {TOPIC_STATUS_LABELS[topic.status]}
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+            })}
         </div>
       )}
     </div>

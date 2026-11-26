@@ -142,8 +142,16 @@ function StudyContent() {
               return (
                 <Card
                   key={topic.id}
-                  className="hover:shadow-sm transition-shadow cursor-pointer"
+                  className="cursor-pointer transition-colors hover:border-primary/30 hover:bg-secondary/30"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedTopicId(topic.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedTopicId(topic.id);
+                    }
+                  }}
                 >
                   <CardContent className="p-4 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -222,8 +230,11 @@ function StudyContent() {
                     {(['not_started', 'learning', 'understood', 'mastered'] as const).map((s) => (
                       <button
                         key={s}
+                        type="button"
                         onClick={() => handleConceptStatus(c.id, s)}
-                        className={`w-5 h-5 rounded-full transition-all ${
+                        aria-label={`Mark ${c.name} ${TOPIC_STATUS_LABELS[s]}`}
+                        aria-pressed={c.status === s}
+                        className={`h-7 w-7 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                           c.status === s
                             ? TOPIC_STATUS_COLORS[s]
                             : 'bg-secondary hover:bg-secondary/70'
@@ -253,34 +264,37 @@ function StudyContent() {
               </span>
             </div>
 
-            <div
-              className="min-h-[180px] rounded-xl border-2 border-border p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/30 transition-colors"
+            <button
+              type="button"
+              aria-expanded={showAnswer}
+              className="min-h-[180px] w-full rounded-lg border border-border bg-background p-6 flex flex-col items-center justify-center text-center transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setShowAnswer(!showAnswer)}
             >
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+              <span className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
                 {showAnswer ? 'Answer' : 'Question'}
-              </p>
-              <p className="text-base font-medium">
+              </span>
+              <span className="text-base font-medium">
                 {showAnswer ? currentCard.back : currentCard.front}
-              </p>
+              </span>
               {!showAnswer && (
-                <p className="text-xs text-muted-foreground mt-4">Tap to reveal answer</p>
+                <span className="mt-4 text-xs text-muted-foreground">Tap to reveal answer</span>
               )}
-            </div>
+            </button>
 
             {showAnswer && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-11 text-destructive"
                   onClick={() => handleFlashcardStatus('dont_know')}
-                  className="text-destructive"
                 >
                   Don&apos;t Know
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-11"
                   onClick={() => handleFlashcardStatus('almost_know')}
                 >
                   Almost
@@ -288,8 +302,8 @@ function StudyContent() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-11 text-emerald-600"
                   onClick={() => handleFlashcardStatus('know')}
-                  className="text-emerald-600"
                 >
                   <Check className="w-3.5 h-3.5 mr-1" />
                   Know
@@ -297,6 +311,7 @@ function StudyContent() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-11"
                   onClick={() => handleFlashcardStatus('new')}
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1" />

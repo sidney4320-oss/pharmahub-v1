@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PharmaHub AI">
+  <rect width="512" height="512" rx="112" fill="#f8fafc"/>
+  <path d="M256 128c-42-30-102-38-150-22v232c48-16 108-8 150 22 42-30 102-38 150-22V106c-48-16-108-8-150 22Z" fill="none" stroke="#1d4ed8" stroke-width="24" stroke-linejoin="round"/>
+  <path d="M256 128v232" fill="none" stroke="#1e40af" stroke-width="18"/>
+  <g transform="rotate(-36 256 256)">
+    <rect x="184" y="208" width="144" height="96" rx="48" fill="#22d3ee"/>
+    <path d="M232 208h24v96h-24a48 48 0 0 1 0-96Z" fill="#fff"/>
+    <path d="M256 208v96" stroke="#0f172a" stroke-width="10"/>
+  </g>
+  <path d="m374 128 24 26" fill="none" stroke="#0f766e" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="374" cy="128" r="12" fill="#0f766e"/>
+  <circle cx="398" cy="154" r="9" fill="#0f766e"/>
+</svg>

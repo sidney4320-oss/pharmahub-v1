@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { supabase } from '@/lib/supabase/client';
 import type { Subject, Topic, Resource, Note, Exam, Quiz, Flashcard, StudySession } from '@/types/database';
@@ -7,7 +8,7 @@ import type { Subject, Topic, Resource, Note, Exam, Quiz, Flashcard, StudySessio
 export function useQueries() {
   const { user } = useAuth();
 
-  async function getSubjects(): Promise<Subject[]> {
+  const getSubjects = useCallback(async (): Promise<Subject[]> => {
     if (!user) return [];
     const { data } = await supabase
       .from('subjects')
@@ -15,7 +16,7 @@ export function useQueries() {
       .eq('user_id', user.id)
       .order('name');
     return data ?? [];
-  }
+  }, [user]);
 
   async function getSubject(id: string): Promise<Subject | null> {
     const { data } = await supabase
@@ -26,14 +27,14 @@ export function useQueries() {
     return data;
   }
 
-  async function getTopics(subjectId: string): Promise<Topic[]> {
+  const getTopics = useCallback(async (subjectId: string): Promise<Topic[]> => {
     const { data } = await supabase
       .from('topics')
       .select('*')
       .eq('subject_id', subjectId)
       .order('sort_order');
     return data ?? [];
-  }
+  }, []);
 
   async function getTopic(id: string): Promise<Topic | null> {
     const { data } = await supabase
@@ -44,7 +45,7 @@ export function useQueries() {
     return data as Topic & { subject: Subject } | null;
   }
 
-  async function getResources(subjectId?: string, topicId?: string): Promise<Resource[]> {
+  const getResources = useCallback(async (subjectId?: string, topicId?: string): Promise<Resource[]> => {
     let q = supabase
       .from('resources')
       .select('*, subject:subjects(*), topic:topics(*)')
@@ -53,7 +54,7 @@ export function useQueries() {
     if (topicId) q = q.eq('topic_id', topicId);
     const { data } = await q;
     return (data as Resource[]) ?? [];
-  }
+  }, []);
 
   async function getResource(id: string): Promise<Resource | null> {
     const { data } = await supabase
@@ -64,7 +65,7 @@ export function useQueries() {
     return data as Resource | null;
   }
 
-  async function getNotes(subjectId?: string, topicId?: string): Promise<Note[]> {
+  const getNotes = useCallback(async (subjectId?: string, topicId?: string): Promise<Note[]> => {
     let q = supabase
       .from('notes')
       .select('*, subject:subjects(*), topic:topics(*)')
@@ -73,9 +74,9 @@ export function useQueries() {
     if (topicId) q = q.eq('topic_id', topicId);
     const { data } = await q;
     return (data as Note[]) ?? [];
-  }
+  }, []);
 
-  async function getExams(): Promise<Exam[]> {
+  const getExams = useCallback(async (): Promise<Exam[]> => {
     if (!user) return [];
     const { data } = await supabase
       .from('exams')
@@ -83,7 +84,7 @@ export function useQueries() {
       .eq('user_id', user.id)
       .order('exam_date');
     return (data as Exam[]) ?? [];
-  }
+  }, [user]);
 
   async function getQuizzes(): Promise<Quiz[]> {
     if (!user) return [];

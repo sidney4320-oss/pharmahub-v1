@@ -1,5 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PharmaHub">
-  <rect width="512" height="512" rx="112" fill="#0f766e"/>
-  <path d="M218 102h76v116h116v76H294v116h-76V294H102v-76h116z" fill="#fff"/>
-  <circle cx="365" cy="147" r="34" fill="#a7f3d0"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PharmaHub AI">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <path d="M256 128c-42-30-102-38-150-22v232c48-16 108-8 150 22 42-30 102-38 150-22V106c-48-16-108-8-150 22Z" fill="none" stroke="#60a5fa" stroke-width="24" stroke-linejoin="round"/>
+  <path d="M256 128v232" fill="none" stroke="#93c5fd" stroke-width="18"/>
+  <g transform="rotate(-36 256 256)">
+    <rect x="184" y="208" width="144" height="96" rx="48" fill="#22d3ee"/>
+    <rect x="184" y="208" width="72" height="96" rx="48" fill="#f8fafc"/>
+    <path d="M256 208v96" stroke="#0f172a" stroke-width="10"/>
+  </g>
+  <circle cx="374" cy="128" r="10" fill="#e2e8f0"/>
+  <circle cx="398" cy="154" r="7" fill="#e2e8f0"/>
+  <path d="M374 128l24 26" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round"/>
 </svg>

@@ -54,7 +54,7 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors">
+              <button aria-label="Open account menu" className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-secondary">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                     {initials}

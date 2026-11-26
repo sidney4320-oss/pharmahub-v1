@@ -79,9 +79,9 @@ function SubjectsContent() {
           {subjects.map((subject) => {
             const stats = getSubjectStats(subject.id);
             return (
-              <Link key={subject.id} href={`/subjects/${subject.id}`}>
-                <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
-                  <CardContent className="p-5">
+              <Link key={subject.id} href={`/subjects/${subject.id}`} className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Card className="h-full transition-colors hover:border-primary/30 hover:bg-secondary/20">
+                  <CardContent className="p-4 sm:p-5">
                     <div className="flex items-start gap-3 mb-4">
                       <SubjectIcon icon={subject.icon} color={subject.color} size="lg" />
                       <div className="min-w-0 flex-1">
@@ -89,7 +89,7 @@ function SubjectsContent() {
                           {subject.name}
                         </h3>
                         {subject.code && (
-                          <p className="text-xs text-muted-foreground mt-1">{subject.code}</p>
+                          <p className="mt-1 text-xs font-medium text-muted-foreground">{subject.code}</p>
                         )}
                       </div>
                     </div>
@@ -111,7 +111,9 @@ function SubjectsContent() {
                       </span>
                     </div>
 
-                    <ProgressBadge value={stats.pct} />
+                    {stats.total > 0
+                      ? <ProgressBadge value={stats.pct} />
+                      : <p className="text-xs text-muted-foreground">No topics yet</p>}
 
                     <div className="flex items-center justify-end mt-3">
                       <span className="text-xs text-primary font-medium flex items-center gap-1">

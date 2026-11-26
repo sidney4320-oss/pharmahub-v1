@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ProtectedRoute } from '@/components/providers/protected-route';
 import { AppShell } from '@/components/layout/app-shell';
 import { supabase } from '@/lib/supabase/client';
@@ -270,10 +271,13 @@ function ResourceDetailContent() {
             <CardContent className="p-4">
               {isImage && signedUrl ? (
                 <div className="flex justify-center">
-                  <img
+                  <Image
                     src={signedUrl}
                     alt={resource.title}
-                    className="max-w-full rounded-lg border"
+                    width={1600}
+                    height={1200}
+                    unoptimized
+                    className="h-auto max-w-full rounded-lg border"
                   />
                 </div>
               ) : isPdf && signedUrl ? (

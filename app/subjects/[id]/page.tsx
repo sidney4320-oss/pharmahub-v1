@@ -244,9 +244,11 @@ function SubjectDetailContent() {
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium">{progress}% · {doneCount}/{topics.length} topics</span>
+                  <span className="font-medium">
+                    {topics.length > 0 ? `${progress}% · ${doneCount}/${topics.length} topics` : 'No topics added yet'}
+                  </span>
                 </div>
-                <ProgressBadge value={progress} showLabel={false} />
+                {topics.length > 0 && <ProgressBadge value={progress} showLabel={false} />}
               </div>
 
               {examDays !== null && (

@@ -56,6 +56,7 @@ export function UploadDialog({
   const [resourceType, setResourceType] = useState<ResourceType>('lecture_notes');
   const [tags, setTags] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<'uploading' | 'processing'>('uploading');
   const [dragOver, setDragOver] = useState(false);
 
   const availableTopics = topics.filter((t) => t.subject_id === subjectId);
@@ -68,6 +69,7 @@ export function UploadDialog({
     setTopicId(defaultTopicId || '');
     setResourceType('lecture_notes');
     setTags('');
+    setUploadStage('uploading');
   };
 
   const handleFileSelect = useCallback((selectedFile: File | null) => {
@@ -108,6 +110,7 @@ export function UploadDialog({
     }
 
     setUploading(true);
+    setUploadStage('uploading');
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'file';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -123,6 +126,7 @@ export function UploadDialog({
       }
 
       // Extract text
+      setUploadStage('processing');
       let extractedText: string | null = null;
       let extractionStatus: 'pending' | 'extracted' | 'failed' | 'not_applicable' = 'pending';
       try {
@@ -171,7 +175,7 @@ export function UploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-1rem)] overflow-y-auto sm:w-full sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Upload Resource</DialogTitle>
         </DialogHeader>
@@ -183,6 +187,15 @@ export function UploadDialog({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Choose a resource file"
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
               }`}
@@ -201,6 +214,7 @@ export function UploadDialog({
                 type="file"
                 accept={ACCEPTED_FILE_EXTENSIONS}
                 className="hidden"
+                aria-label="Choose a resource file"
                 onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
               />
             </div>
@@ -218,8 +232,11 @@ export function UploadDialog({
                 <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
               </div>
               <button
+                type="button"
                 onClick={() => setFile(null)}
-                className="text-muted-foreground hover:text-foreground p-1"
+                disabled={uploading}
+                aria-label="Remove selected file"
+                className="min-h-10 min-w-10 rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -238,7 +255,7 @@ export function UploadDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Subject</Label>
                   <Select value={subjectId} onValueChange={(v) => { setSubjectId(v); setTopicId(''); }}>
@@ -316,7 +333,7 @@ export function UploadDialog({
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Uploading...
+                {uploadStage === 'uploading' ? 'Uploading...' : 'Processing text...'}
               </>
             ) : (
               <>

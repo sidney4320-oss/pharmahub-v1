@@ -28,6 +28,10 @@ export interface ExplainResult {
   sources: { title: string; snippet: string }[];
 }
 
+export interface ChatResult {
+  reply: string;
+}
+
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -38,24 +42,18 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 async function requestJSON<T>(url: string, body: unknown): Promise<T | null> {
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: await getAuthHeaders(),
-      body: JSON.stringify(body),
-    });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
 
-    if (!res.ok) {
-      const payload = await res.json().catch(() => null);
-      console.error('AI request failed:', payload?.error || res.statusText);
-      return null;
-    }
-
-    return await res.json() as T;
-  } catch (error) {
-    console.error('AI request error:', error);
-    return null;
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(payload?.error || `AI request failed (${res.status})`);
   }
+
+  return payload as T;
 }
 
 export const aiService = {
@@ -95,8 +93,14 @@ export const aiService = {
     return requestJSON<ExplainResult>('/api/ai/explain', { concept, context });
   },
 
-  async answerQuestion(question: string, sources?: { title: string; text: string }[]): Promise<ExplainResult | null> {
-    return this.explainConcept(question, sources?.map((source) => source.text).join('\n'));
+  async answerQuestion(
+    question: string,
+    sources?: { title: string; text: string }[],
+  ): Promise<ChatResult | null> {
+    return requestJSON<ChatResult>('/api/ai/chat', {
+      message: question,
+      context: sources?.map((source) => `${source.title}: ${source.text}`).join('\n').slice(0, 8000),
+    });
   },
 
   async analyzeImage(_imageBase64: string, _prompt?: string): Promise<ExplainResult | null> {
